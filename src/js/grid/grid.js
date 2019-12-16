@@ -1,8 +1,8 @@
 const Tile = require("./tile");
 
 function Grid(width, height) {
-  this.width;
-  this.height;
+  this.width = width;
+  this.height = height;
 }
 
 Grid.prototype.initialize = function() {
@@ -30,6 +30,7 @@ Grid.prototype.createGrid = function() {
   let grid = document.getElementById("grid");
   grid.innerHTML = tableHTML;
 };
+
 
 
 /*
