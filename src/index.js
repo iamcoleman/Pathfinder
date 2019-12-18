@@ -1,4 +1,5 @@
 import './css/grid.css'
+import './css/tile.css'
 import './js/grid/grid'
 
 // Needed for Hot Module Replacement

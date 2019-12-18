@@ -10,6 +10,18 @@ export function dijkstra(grid, startTile, goalTile) {
   while (!!unvisitedTiles.length) {
     sortTilesByDistance(unvisitedTiles);
     const closestTile = unvisitedTiles.shift();
+
+    // if closest tile is a wall, then continue to the next closest tile
+    if (closestTile.isWall) {
+      continue;
+    }
+
+    // if the next closest tile's distance is infinity, then we are trapped and cannot
+    // search anymore tiles, so return the visited tiles
+    if (closestTile.distance === Infinity) {
+      return visitedTilesInOrder;
+    }
+
     closestTile.isVisited = true;
     visitedTilesInOrder.push(closestTile);
     if (closestTile === goalTile) {
@@ -59,13 +71,13 @@ function getUnvisitedNeighbors(tile, grid) {
 }
 
 // get the shortest path once Dijkstra's finishes
-export function getTilesInShortestPathOrder(goalTile) {
-  const tilesInShortestPathOrder = [];
+export function getShortestPathTilesInOrder(goalTile) {
+  const shortestPathTilesInOrder = [];
   let tilePtr = goalTile;
   while (!!tilePtr) {
-    tilesInShortestPathOrder.unshift(tilePtr);
+    shortestPathTilesInOrder.unshift(tilePtr);
     tilePtr = tilePtr.previousTile;
   }
 
-  return tilesInShortestPathOrder;
+  return shortestPathTilesInOrder;
 }

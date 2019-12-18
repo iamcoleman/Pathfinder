@@ -1,6 +1,5 @@
-function Tile(id, status, row, col) {
+function Tile(id, row, col) {
   this.id = id;
-  this.status = status;
   this.row = row;
   this.col = col;
 
@@ -8,9 +7,11 @@ function Tile(id, status, row, col) {
   this.isVisited = false;
   this.isStart = false;
   this.isGoal = false;
+  this.isWall = false;
 
   // distances
   this.distance = Infinity;
+  this.previousTile = null;
 }
 
 module.exports = Tile;

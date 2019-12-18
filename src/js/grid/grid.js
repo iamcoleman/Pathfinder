@@ -1,4 +1,4 @@
-import {dijkstra, getTilesInShortestPathOrder} from '../algorithms/dijkstra'
+import {dijkstra, getShortestPathTilesInOrder} from '../algorithms/dijkstra'
 const Tile = require("./tile");
 
 const START_TILE_ROW = 10;
@@ -6,69 +6,120 @@ const START_TILE_COL = 5;
 const GOAL_TILE_ROW = 10;
 const GOAL_TILE_COL = 25;
 
+const TILE_TYPE = {
+  'normal': 'normal',
+  'wall': 'wall',
+  'start': 'start',
+  'goal': 'goal'
+};
+
 function Grid(width, height) {
   this.width = width;
   this.height = height;
 
   this.gridArray = [];
+
+  this.searchDone = false;
+
+  this.mouseDown = false;
+  this.tileClicked = undefined;
 }
 
 Grid.prototype.initialize = function() {
   this.createGrid();
   this.addEventListeners();
-  this.createStartButton();
+  this.createButtons();
 };
 
 /* Create Grid */
 Grid.prototype.createGrid = function() {
-  let tableHTML = "";
+  const grid = document.getElementById('grid');
+  let tableHTML = '';
 
-  // fill grid with nodes
+  // fill grid with tiles
   for (let r = 0; r < this.height; r++) {
     const currentRowTiles = [];
-    let currentRowHTML = `<tr id="row ${r}">`;
+    let currentRowHTML = `<tr id="row-${r}">`;
     for (let c = 0; c < this.width; c++) {
       const newTileId = `tile-${r}-${c}`;
 
-      const newTileClass = (r === START_TILE_ROW && c === START_TILE_COL)
-        ? 'start'
-        : (r === GOAL_TILE_ROW && c === GOAL_TILE_COL)
-        ? 'goal'
-        : 'unvisited';
+      const newTile = new Tile(newTileId, r, c);
 
-      const newTile = new Tile(newTileId, newTileClass, r, c);
+      const newTileClass = (r === START_TILE_ROW && c === START_TILE_COL)
+        ? 'tile tile-start'
+        : (r === GOAL_TILE_ROW && c === GOAL_TILE_COL)
+        ? 'tile tile-goal'
+        : 'tile tile-unvisited';
+
+      if (newTile.row === START_TILE_ROW && newTile.col === START_TILE_COL) {
+        newTile.isStart = true;
+      }
+      if (newTile.row === GOAL_TILE_ROW && newTile.col === GOAL_TILE_COL) {
+        newTile.isGoal = true;
+      }
+
       currentRowTiles.push(newTile);
       currentRowHTML += `<td id="${newTileId}" class="${newTileClass}"></td>`;
     }
+
     this.gridArray.push(currentRowTiles);
     tableHTML += currentRowHTML;
   }
 
-  let grid = document.getElementById("grid");
   grid.innerHTML = tableHTML;
 };
 
-/* Event Listeners */
+/*
+ *  Event Listeners
+ */
 Grid.prototype.addEventListeners = function() {
   let grid = this;
   for (let r = 0; r < grid.height; r++) {
     for (let c = 0; c < grid.width; c++) {
       let currTileId = `tile-${r}-${c}`;
-      let currTile = grid.getTile(currTileId);
+      let currTile = grid.getTileFromId(currTileId);
       let currTileElement = document.getElementById(currTileId);
 
       // onMouseDown
       currTileElement.onmousedown = (e) => {
         e.preventDefault();
 
-        grid.changeTile(currTile);
+        grid.mouseDown = true;
+        grid.tileClicked = (currTile.isStart)
+          ? TILE_TYPE.start
+          : (currTile.isGoal)
+          ? TILE_TYPE.goal
+          : (currTile.isWall)
+          ? TILE_TYPE.wall
+          : TILE_TYPE.normal;
+
+        if (!currTile.isStart && !currTile.isGoal) {
+          grid.changeNormalTile(currTile);
+        }
+      };
+
+      // onMouseUp
+      currTileElement.onmouseup = (e) => {
+        grid.mouseDown = false;
+      };
+
+      // onMouseEnter
+      currTileElement.onmouseenter = (e) => {
+        if (grid.mouseDown && !currTile.isStart && !currTile.isGoal) {
+          grid.changeNormalTile(currTile);
+        }
+      };
+
+      // onMouseLeave
+      currTileElement.onmouseleave = (e) => {
+        //
       }
     }
   }
 };
 
-/* Get Tile */
-Grid.prototype.getTile = function(id) {
+// Get Tile from tile ID
+Grid.prototype.getTileFromId = function(id) {
   let tileId = id.split('-');
   let row = tileId[1];
   let col = tileId[2];
@@ -76,26 +127,118 @@ Grid.prototype.getTile = function(id) {
   return this.gridArray[row][col];
 };
 
-/* Change Tile - Normal */
-Grid.prototype.changeTile = function(tile) {
+
+/*
+ *  Change Tiles
+ */
+Grid.prototype.changeNormalTile = function(tile) {
   let tileElement = document.getElementById(tile.id);
 
-  // change class on element to unvisited/wall
-  tileElement.className = tile.status !== 'wall' ? 'wall' : 'unvisited';
-  // change status on tile to unvisited/wall
-  tile.status = tileElement.className !== 'wall' ? 'unvisited' : 'wall';
+  if (this.tileClicked === TILE_TYPE.normal) {
+    // change all to normal
+    tile.isWall = true;
+    tileElement.className = 'tile tile-wall'
+  } else {
+    // change all to wall
+    tile.isWall = false;
+    tileElement.className = 'tile tile-unvisited';
+  }
 };
 
 
-/* Create Start Button */
-Grid.prototype.createStartButton = function() {
-  document.getElementById("startDijkstra").onclick = () => {
+/*
+ *  Create Buttons
+ */
+Grid.prototype.createButtons = function() {
+  // Start Dijkstra
+  document.getElementById('startDijkstra').onclick = () => {
+    console.log('startDijkstra');
+    if (this.searchDone) {
+      this.clearPath();
+    }
     const startTile = this.gridArray[START_TILE_ROW][START_TILE_COL];
     const goalTile = this.gridArray[GOAL_TILE_ROW][GOAL_TILE_COL];
     const visitedTilesInOrder = dijkstra(this.gridArray, startTile, goalTile);
-    const tilesInShortestPathOrder = getTilesInShortestPathOrder(goalTile);
-    console.log(tilesInShortestPathOrder);
+    const shortestPathTilesInOrder = getShortestPathTilesInOrder(goalTile);
+    this.animateDijkstra(visitedTilesInOrder, shortestPathTilesInOrder);
+  };
+
+  // Reset Grid
+  document.getElementById('resetGrid').onclick = () => {
+    this.resetGrid();
+  };
+
+  // Clear Path
+  document.getElementById('clearPath').onclick = () => {
+    this.clearPath();
+  };
+};
+
+Grid.prototype.resetGrid = function() {
+  console.log('resetGrid');
+  this.gridArray = [];
+  document.getElementById('grid').innerHTML = '';
+  this.createGrid();
+  this.addEventListeners();
+  this.searchDone = false;
+};
+
+Grid.prototype.clearPath = function() {
+  console.log('clearPath');
+  for (const row of this.gridArray) {
+    for (const tile of row) {
+      if (tile.isVisited) {
+        tile.isVisited = false;
+        tile.previousTile = null;
+        tile.distance = Infinity;
+        if (!tile.isStart && !tile.isGoal) {
+          document.getElementById(tile.id).className = 'tile tile-unvisited';
+        }
+      }
+    }
   }
+  this.searchDone = false;
+};
+
+
+/*
+ *  Visualization Functions
+ */
+
+// animate Dijkstra's algorithm
+Grid.prototype.animateDijkstra = function(visitedTilesInOrder, shortestPathTilesInOrder) {
+  for (let i = 0; i <= visitedTilesInOrder.length; i++) {
+    // once all visited tiles have been animated, animate the shortest path
+    if (i === visitedTilesInOrder.length) {
+      setTimeout(() => {
+        this.animatePath(shortestPathTilesInOrder);
+      }, 10 * i);
+      return;
+    }
+
+    // change tile to visited class
+    setTimeout(() => {
+      const tile = visitedTilesInOrder[i];
+      if (!tile.isStart && !tile.isGoal) {
+        document.getElementById(tile.id).className = 'tile tile-visited';
+      }
+    }, 10 * i);
+  }
+};
+
+// animate the shortest path
+Grid.prototype.animatePath = function(shortestPathTilesInOrder) {
+  let delay = 0;
+  for (const tile of shortestPathTilesInOrder) {
+    setTimeout(() => {
+      if (!tile.isStart && !tile.isGoal) {
+        document.getElementById(tile.id).className = 'tile tile-path';
+      }
+    }, 50 * delay);
+
+    delay += 1;
+  }
+  this.searchDone = true;
 };
 
 
