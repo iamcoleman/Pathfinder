@@ -1,10 +1,7 @@
-import {dijkstra, getShortestPathTilesInOrder} from '../algorithms/dijkstra'
-const Tile = require("./tile");
+import {dijkstra, dijkstraGetShortestPathTilesInOrder} from '../algorithms/dijkstra'
+import {aStar, aStarGetShortestPathTilesInOrder} from "../algorithms/a_star";
 
-const START_TILE_ROW = 10;
-const START_TILE_COL = 5;
-const GOAL_TILE_ROW = 10;
-const GOAL_TILE_COL = 25;
+const Tile = require("./tile");
 
 const TILE_TYPE = {
   'unvisited': 'unvisited',
@@ -19,6 +16,8 @@ function Grid(width, height) {
   this.height = height;
 
   this.gridArray = [];
+  this.startTileId = undefined;
+  this.goalTileId = undefined;
 
   this.searchDone = false;
 
@@ -41,22 +40,28 @@ Grid.prototype.createGrid = function() {
   for (let r = 0; r < this.height; r++) {
     const currentRowTiles = [];
     let currentRowHTML = `<tr id="row-${r}">`;
+
     for (let c = 0; c < this.width; c++) {
       const newTileId = `tile-${r}-${c}`;
 
       const newTile = new Tile(newTileId, r, c);
 
-      const newTileClass = (r === START_TILE_ROW && c === START_TILE_COL)
+      const startGoalRow = Math.floor(this.height / 2);
+      const startTileCol = Math.floor(this.width / 4);
+      const goalTileCol = Math.floor(3 * (this.width / 4));
+      const newTileClass = (r === startGoalRow && c === startTileCol)
         ? 'tile tile-start'
-        : (r === GOAL_TILE_ROW && c === GOAL_TILE_COL)
+        : (r === startGoalRow && c === goalTileCol)
         ? 'tile tile-goal'
         : 'tile tile-unvisited';
 
-      if (newTile.row === START_TILE_ROW && newTile.col === START_TILE_COL) {
+      if (newTile.row === startGoalRow && newTile.col === startTileCol) {
         newTile.isStart = true;
+        this.startTileId = newTile.id;
       }
-      if (newTile.row === GOAL_TILE_ROW && newTile.col === GOAL_TILE_COL) {
+      if (newTile.row === startGoalRow && newTile.col === goalTileCol) {
         newTile.isGoal = true;
+        this.goalTileId = newTile.id;
       }
 
       currentRowTiles.push(newTile);
@@ -135,7 +140,7 @@ Grid.prototype.getTileFromId = function(id) {
  *  Change Tiles
  */
 Grid.prototype.changeNormalTile = function(tile) {
-  let tileElement = document.getElementById(tile.id);
+  const tileElement = document.getElementById(tile.id);
 
   if (this.tileClicked === TILE_TYPE.visited || this.tileClicked === TILE_TYPE.unvisited) {
     // change all to normal
@@ -155,15 +160,24 @@ Grid.prototype.changeNormalTile = function(tile) {
 Grid.prototype.createButtons = function() {
   // Start Dijkstra
   document.getElementById('startDijkstra').onclick = () => {
-    console.log('startDijkstra');
     if (this.searchDone) {
       this.clearPath();
     }
-    const startTile = this.gridArray[START_TILE_ROW][START_TILE_COL];
-    const goalTile = this.gridArray[GOAL_TILE_ROW][GOAL_TILE_COL];
+    const startTile = this.getTileFromId(this.startTileId);
+    const goalTile = this.getTileFromId(this.goalTileId);
     const visitedTilesInOrder = dijkstra(this.gridArray, startTile, goalTile);
-    const shortestPathTilesInOrder = getShortestPathTilesInOrder(goalTile);
-    console.log(shortestPathTilesInOrder);
+    const shortestPathTilesInOrder = dijkstraGetShortestPathTilesInOrder(goalTile);
+    this.animateDijkstra(visitedTilesInOrder, shortestPathTilesInOrder);
+  };
+
+  // Start A*
+  document.getElementById('startAStar').onclick = () => {
+    if (this.searchDone) this.clearPath();
+
+    const startTile = this.getTileFromId(this.startTileId);
+    const goalTile = this.getTileFromId(this.goalTileId);
+    const visitedTilesInOrder = aStar(this.gridArray, startTile, goalTile);
+    const shortestPathTilesInOrder = aStarGetShortestPathTilesInOrder(goalTile);
     this.animateDijkstra(visitedTilesInOrder, shortestPathTilesInOrder);
   };
 
@@ -179,7 +193,6 @@ Grid.prototype.createButtons = function() {
 };
 
 Grid.prototype.resetGrid = function() {
-  console.log('resetGrid');
   // Grid Attributes
   this.searchDone = false;
 
@@ -195,6 +208,10 @@ Grid.prototype.resetGrid = function() {
         this.gridArray[row][col].distance = Infinity;
         // set previous tile to null
         this.gridArray[row][col].previousTile = null;
+        // A* values
+        this.gridArray[row][col].g_n = Infinity;
+        this.gridArray[row][col].h_n = Infinity;
+        this.gridArray[row][col].f_n = Infinity;
         // set class to unvisited
         document.getElementById(this.gridArray[row][col].id).className = 'tile tile-unvisited';
       } else {
@@ -204,13 +221,16 @@ Grid.prototype.resetGrid = function() {
         this.gridArray[row][col].distance = Infinity;
         // set previous tile to null
         this.gridArray[row][col].previousTile = null;
+        // A* values
+        this.gridArray[row][col].g_n = Infinity;
+        this.gridArray[row][col].h_n = Infinity;
+        this.gridArray[row][col].f_n = Infinity;
       }
     }
   }
 };
 
 Grid.prototype.clearPath = function() {
-  console.log('clearPath');
   // Grid Attributes
   this.searchDone = false;
 
@@ -224,6 +244,10 @@ Grid.prototype.clearPath = function() {
         this.gridArray[row][col].distance = Infinity;
         // set previous tile to null
         this.gridArray[row][col].previousTile = null;
+        // A* values
+        this.gridArray[row][col].g_n = Infinity;
+        this.gridArray[row][col].h_n = Infinity;
+        this.gridArray[row][col].f_n = Infinity;
         // set class to unvisited
         document.getElementById(this.gridArray[row][col].id).className = 'tile tile-unvisited';
       } else {
@@ -233,6 +257,10 @@ Grid.prototype.clearPath = function() {
         this.gridArray[row][col].distance = Infinity;
         // set previous tile to null
         this.gridArray[row][col].previousTile = null;
+        // A* values
+        this.gridArray[row][col].g_n = Infinity;
+        this.gridArray[row][col].h_n = Infinity;
+        this.gridArray[row][col].f_n = Infinity;
       }
     }
   }
@@ -263,6 +291,9 @@ Grid.prototype.animateDijkstra = function(visitedTilesInOrder, shortestPathTiles
     }, 10 * i);
   }
 };
+
+// animate A* algorithm
+Grid.prototype.animateAStar = function() {};
 
 // animate the shortest path
 Grid.prototype.animatePath = function(shortestPathTilesInOrder) {

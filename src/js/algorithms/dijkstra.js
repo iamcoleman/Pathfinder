@@ -71,7 +71,7 @@ function getUnvisitedNeighbors(tile, grid) {
 }
 
 // get the shortest path once Dijkstra's finishes
-export function getShortestPathTilesInOrder(goalTile) {
+export function dijkstraGetShortestPathTilesInOrder(goalTile) {
   const shortestPathTilesInOrder = [];
   let tilePtr = goalTile;
   while (!!tilePtr) {

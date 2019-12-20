@@ -12,6 +12,11 @@ function Tile(id, row, col) {
   // distances
   this.distance = Infinity;
   this.previousTile = null;
+
+  // A*
+  this.g_n = Infinity;
+  this.h_n = Infinity;
+  this.f_n = Infinity;
 }
 
 module.exports = Tile;
