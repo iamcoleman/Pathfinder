@@ -1,5 +1,6 @@
 import {dijkstra, dijkstraGetShortestPathTilesInOrder} from '../algorithms/dijkstra'
-import {aStar, aStarGetShortestPathTilesInOrder} from "../algorithms/a_star";
+import {aStar, aStarGetShortestPathTilesInOrder} from '../algorithms/a_star';
+import {recursiveMaze} from '../mazes/recursiveMaze';
 
 const Tile = require("./tile");
 
@@ -179,6 +180,12 @@ Grid.prototype.createButtons = function() {
     const visitedTilesInOrder = aStar(this.gridArray, startTile, goalTile);
     const shortestPathTilesInOrder = aStarGetShortestPathTilesInOrder(goalTile);
     this.animateSearch(visitedTilesInOrder, shortestPathTilesInOrder);
+  };
+
+  // Draw Recursive Maze
+  document.getElementById('recursiveMaze').onclick = () => {
+    this.resetGrid();
+    recursiveMaze(this, 2, this.height - 3, 2, this.width - 3, 'vertical', false);
   };
 
   // Reset Grid
