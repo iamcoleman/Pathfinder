@@ -167,7 +167,7 @@ Grid.prototype.createButtons = function() {
     const goalTile = this.getTileFromId(this.goalTileId);
     const visitedTilesInOrder = dijkstra(this.gridArray, startTile, goalTile);
     const shortestPathTilesInOrder = dijkstraGetShortestPathTilesInOrder(goalTile);
-    this.animateDijkstra(visitedTilesInOrder, shortestPathTilesInOrder);
+    this.animateSearch(visitedTilesInOrder, shortestPathTilesInOrder);
   };
 
   // Start A*
@@ -178,7 +178,7 @@ Grid.prototype.createButtons = function() {
     const goalTile = this.getTileFromId(this.goalTileId);
     const visitedTilesInOrder = aStar(this.gridArray, startTile, goalTile);
     const shortestPathTilesInOrder = aStarGetShortestPathTilesInOrder(goalTile);
-    this.animateDijkstra(visitedTilesInOrder, shortestPathTilesInOrder);
+    this.animateSearch(visitedTilesInOrder, shortestPathTilesInOrder);
   };
 
   // Reset Grid
@@ -199,32 +199,22 @@ Grid.prototype.resetGrid = function() {
   // Tile Attributes
   for (let row = 0; row < this.height; row++) {
     for (let col = 0; col < this.width; col++) {
+      // make unvisited
+      this.gridArray[row][col].isVisited = false;
+      // make not wall
+      this.gridArray[row][col].isWall = false;
+      // set distance to Infinity
+      this.gridArray[row][col].distance = Infinity;
+      // set previous tile to null
+      this.gridArray[row][col].previousTile = null;
+      // A* values
+      this.gridArray[row][col].g_n = Infinity;
+      this.gridArray[row][col].h_n = Infinity;
+      this.gridArray[row][col].f_n = Infinity;
+      // if not start or not goal
       if (!this.gridArray[row][col].isStart && !this.gridArray[row][col].isGoal) {
-        // make unvisited
-        this.gridArray[row][col].isVisited = false;
-        // make not wall
-        this.gridArray[row][col].isWall = false;
-        // set distance to Infinity
-        this.gridArray[row][col].distance = Infinity;
-        // set previous tile to null
-        this.gridArray[row][col].previousTile = null;
-        // A* values
-        this.gridArray[row][col].g_n = Infinity;
-        this.gridArray[row][col].h_n = Infinity;
-        this.gridArray[row][col].f_n = Infinity;
         // set class to unvisited
         document.getElementById(this.gridArray[row][col].id).className = 'tile tile-unvisited';
-      } else {
-        // make unvisited
-        this.gridArray[row][col].isVisited = false;
-        // set distance to Infinity
-        this.gridArray[row][col].distance = Infinity;
-        // set previous tile to null
-        this.gridArray[row][col].previousTile = null;
-        // A* values
-        this.gridArray[row][col].g_n = Infinity;
-        this.gridArray[row][col].h_n = Infinity;
-        this.gridArray[row][col].f_n = Infinity;
       }
     }
   }
@@ -237,30 +227,21 @@ Grid.prototype.clearPath = function() {
   // Tile Attributes
   for (let row = 0; row < this.height; row++) {
     for (let col = 0; col < this.width; col++) {
+      // make unvisited
+      this.gridArray[row][col].isVisited = false;
+      // set distance to Infinity
+      this.gridArray[row][col].distance = Infinity;
+      // set previous tile to null
+      this.gridArray[row][col].previousTile = null;
+      // A* values
+      this.gridArray[row][col].g_n = Infinity;
+      this.gridArray[row][col].h_n = Infinity;
+      this.gridArray[row][col].f_n = Infinity;
+
+      // if not start or not goal
       if (!this.gridArray[row][col].isStart && !this.gridArray[row][col].isGoal && !this.gridArray[row][col].isWall) {
-        // make unvisited
-        this.gridArray[row][col].isVisited = false;
-        // set distance to Infinity
-        this.gridArray[row][col].distance = Infinity;
-        // set previous tile to null
-        this.gridArray[row][col].previousTile = null;
-        // A* values
-        this.gridArray[row][col].g_n = Infinity;
-        this.gridArray[row][col].h_n = Infinity;
-        this.gridArray[row][col].f_n = Infinity;
         // set class to unvisited
         document.getElementById(this.gridArray[row][col].id).className = 'tile tile-unvisited';
-      } else {
-        // make unvisited
-        this.gridArray[row][col].isVisited = false;
-        // set distance to Infinity
-        this.gridArray[row][col].distance = Infinity;
-        // set previous tile to null
-        this.gridArray[row][col].previousTile = null;
-        // A* values
-        this.gridArray[row][col].g_n = Infinity;
-        this.gridArray[row][col].h_n = Infinity;
-        this.gridArray[row][col].f_n = Infinity;
       }
     }
   }
@@ -272,7 +253,7 @@ Grid.prototype.clearPath = function() {
  */
 
 // animate Dijkstra's algorithm
-Grid.prototype.animateDijkstra = function(visitedTilesInOrder, shortestPathTilesInOrder) {
+Grid.prototype.animateSearch = function(visitedTilesInOrder, shortestPathTilesInOrder) {
   for (let i = 0; i <= visitedTilesInOrder.length; i++) {
     // once all visited tiles have been animated, animate the shortest path
     if (i === visitedTilesInOrder.length) {
@@ -291,9 +272,6 @@ Grid.prototype.animateDijkstra = function(visitedTilesInOrder, shortestPathTiles
     }, 10 * i);
   }
 };
-
-// animate A* algorithm
-Grid.prototype.animateAStar = function() {};
 
 // animate the shortest path
 Grid.prototype.animatePath = function(shortestPathTilesInOrder) {
