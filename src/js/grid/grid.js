@@ -1,8 +1,13 @@
 import {dijkstra, dijkstraGetShortestPathTilesInOrder} from '../algorithms/dijkstra'
 import {aStar, aStarGetShortestPathTilesInOrder} from '../algorithms/a_star';
 import {recursiveMaze} from '../mazes/recursiveMaze';
+import {addDetailsToTable} from './details';
 
-const Tile = require("./tile");
+import $ from 'jquery';
+import 'datatables.net';
+import 'datatables.net-bs4';
+
+const Tile = require('./tile');
 
 const TILE_TYPE = {
   'unvisited': 'unvisited',
@@ -10,6 +15,11 @@ const TILE_TYPE = {
   'wall': 'wall',
   'start': 'start',
   'goal': 'goal'
+};
+
+const ALGORITHMS = {
+  'dijkstra': 'dijkstra',
+  'a_star': 'a_star'
 };
 
 function Grid(width, height) {
@@ -21,6 +31,7 @@ function Grid(width, height) {
   this.goalTileId = undefined;
 
   this.searchDone = false;
+  this.lastRunAlgorithm = undefined;
 
   this.mouseDown = false;
   this.tileClicked = undefined;
@@ -161,24 +172,27 @@ Grid.prototype.changeNormalTile = function(tile) {
 Grid.prototype.createButtons = function() {
   // Start Dijkstra
   document.getElementById('startDijkstra').onclick = () => {
-    if (this.searchDone) {
-      this.clearPath();
-    }
+    this.lastRunAlgorithm = ALGORITHMS.dijkstra;
+    if (this.searchDone) this.clearPath();
+
     const startTile = this.getTileFromId(this.startTileId);
     const goalTile = this.getTileFromId(this.goalTileId);
     const visitedTilesInOrder = dijkstra(this.gridArray, startTile, goalTile);
     const shortestPathTilesInOrder = dijkstraGetShortestPathTilesInOrder(goalTile);
+    this.createDetails(visitedTilesInOrder, shortestPathTilesInOrder);
     this.animateSearch(visitedTilesInOrder, shortestPathTilesInOrder);
   };
 
   // Start A*
   document.getElementById('startAStar').onclick = () => {
+    this.lastRunAlgorithm = ALGORITHMS.a_star;
     if (this.searchDone) this.clearPath();
 
     const startTile = this.getTileFromId(this.startTileId);
     const goalTile = this.getTileFromId(this.goalTileId);
     const visitedTilesInOrder = aStar(this.gridArray, startTile, goalTile);
     const shortestPathTilesInOrder = aStarGetShortestPathTilesInOrder(goalTile);
+    this.createDetails(visitedTilesInOrder, shortestPathTilesInOrder);
     this.animateSearch(visitedTilesInOrder, shortestPathTilesInOrder);
   };
 
@@ -293,6 +307,22 @@ Grid.prototype.animatePath = function(shortestPathTilesInOrder) {
     delay += 1;
   }
   this.searchDone = true;
+
+};
+
+
+/*
+ *  Create details page
+ */
+Grid.prototype.createDetails = function(visitedTilesInOrder, shortestPathTilesInOrder) {
+  const algorithm = this.lastRunAlgorithm === ALGORITHMS.dijkstra ? 'Dijkstra'
+    : this.lastRunAlgorithm === ALGORITHMS.a_star ? 'A*'
+    : '';
+
+  const exploreLength = visitedTilesInOrder.length;
+  const pathLength = shortestPathTilesInOrder.length;
+
+  addDetailsToTable(detailTable, algorithm, exploreLength, pathLength);
 };
 
 
@@ -303,3 +333,12 @@ let documentHeight = Math.floor($(document).height() / 30);
 let documentWidth = Math.floor($(document).width() / 25);
 let newGrid = new Grid(documentWidth, documentHeight);
 newGrid.initialize();
+
+// initialize detailTable
+$(document).ready( function () {
+  $('#detailTable').DataTable({
+    paging: false,
+    scrollY: '20vh',
+  });
+});
+const detailTable = $('#detailTable').DataTable();
