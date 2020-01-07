@@ -322,7 +322,7 @@ Grid.prototype.createDetails = function(visitedTilesInOrder, shortestPathTilesIn
   const exploreLength = visitedTilesInOrder.length;
   const pathLength = shortestPathTilesInOrder.length;
 
-  addDetailsToTable(detailTable, algorithm, exploreLength, pathLength);
+  addDetailsToTable(algorithm, exploreLength, pathLength);
 };
 
 
@@ -333,12 +333,3 @@ let documentHeight = Math.floor($(document).height() / 30);
 let documentWidth = Math.floor($(document).width() / 25);
 let newGrid = new Grid(documentWidth, documentHeight);
 newGrid.initialize();
-
-// initialize detailTable
-$(document).ready( function () {
-  $('#detailTable').DataTable({
-    paging: false,
-    scrollY: '20vh',
-  });
-});
-const detailTable = $('#detailTable').DataTable();
