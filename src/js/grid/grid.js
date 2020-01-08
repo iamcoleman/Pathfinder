@@ -35,6 +35,7 @@ function Grid(width, height) {
 
   this.mouseDown = false;
   this.tileClicked = undefined;
+  this.previousTile = undefined;
 }
 
 Grid.prototype.initialize = function() {
@@ -121,12 +122,26 @@ Grid.prototype.addEventListeners = function() {
       // onMouseUp
       currTileElement.onmouseup = (e) => {
         grid.mouseDown = false;
+
+        if (grid.tileClicked === TILE_TYPE.start) {
+          grid.startTileId = currTileId;
+        } else if (grid.tileClicked === TILE_TYPE.goal) {
+          grid.goalTileId = currTileId;
+        }
       };
 
       // onMouseEnter
       currTileElement.onmouseenter = (e) => {
         if (grid.mouseDown && !currTile.isStart && !currTile.isGoal) {
           grid.changeNormalTile(currTile);
+        } else if (grid.mouseDown && (grid.tileClicked === TILE_TYPE.goal || grid.tileClicked === TILE_TYPE.start)) {
+          grid.changeSpecialTile(currTile);
+
+          if (grid.tileClicked === TILE_TYPE.start) {
+            grid.startTileId = currTileId;
+          } else if (grid.tileClicked === TILE_TYPE.goal) {
+            grid.goalTileId = currTileId;
+          }
         }
       };
 
@@ -162,6 +177,24 @@ Grid.prototype.changeNormalTile = function(tile) {
     // change all to wall
     tile.isWall = false;
     tileElement.className = 'tile tile-unvisited';
+  }
+};
+
+Grid.prototype.changeSpecialTile = function(tile) {
+  const tileElement = document.getElementById(tile.id);
+  let previousTileElement;
+
+  if (this.previousTile) previousTileElement = document.getElementById(this.previousTile.id);
+
+  if (!tile.isStart && !tile.isGoal) {
+    if (this.previousTile) {
+      // TODO: need to get previous tile status
+
+      tileElement.className = (tile.isStart)
+        ? 'tile tile-start'
+        : 'tile tile-goal';
+      tile.isStart
+    }
   }
 };
 
