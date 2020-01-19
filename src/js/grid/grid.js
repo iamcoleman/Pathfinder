@@ -35,7 +35,8 @@ function Grid(width, height) {
 
   this.mouseDown = false;
   this.tileClicked = undefined;
-  this.previousTile = undefined;
+  this.previousTileClicked = undefined;
+  this.previousTileClickedStatus = undefined;
 }
 
 Grid.prototype.initialize = function() {
@@ -116,6 +117,8 @@ Grid.prototype.addEventListeners = function() {
 
         if (!currTile.isStart && !currTile.isGoal) {
           grid.changeNormalTile(currTile);
+        } else {
+          this.changeSpecialTile(currTile);
         }
       };
 
@@ -184,16 +187,17 @@ Grid.prototype.changeSpecialTile = function(tile) {
   const tileElement = document.getElementById(tile.id);
   let previousTileElement;
 
-  if (this.previousTile) previousTileElement = document.getElementById(this.previousTile.id);
+  if (this.previousTileClicked) previousTileElement = document.getElementById(this.previousTileClicked.id);
 
   if (!tile.isStart && !tile.isGoal) {
-    if (this.previousTile) {
+    if (this.previousTileClicked) {
       // TODO: need to get previous tile status
+      this.previousTileClicked = this.previousTileClickedStatus === TILE_TYPE.unvisited
 
       tileElement.className = (tile.isStart)
         ? 'tile tile-start'
         : 'tile tile-goal';
-      tile.isStart
+
     }
   }
 };
