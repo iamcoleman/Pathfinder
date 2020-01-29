@@ -7,9 +7,10 @@ import $ from 'jquery';
 import 'datatables.net';
 import 'datatables.net-bs4';
 
-const Tile = require('./tile');
+import { Tile } from './tile';
 
-const TILE_TYPE = {
+
+export const TILE_TYPE = {
   'unvisited': 'unvisited',
   'visited': 'visited',
   'wall': 'wall',
@@ -34,9 +35,9 @@ function Grid(width, height) {
   this.lastRunAlgorithm = undefined;
 
   this.mouseDown = false;
-  this.tileClicked = undefined;
+  this.tileClickedType = undefined;
   this.previousTileClicked = undefined;
-  this.previousTileClickedStatus = undefined;
+  this.previousTileClickedType = undefined;
 }
 
 Grid.prototype.initialize = function() {
@@ -70,10 +71,12 @@ Grid.prototype.createGrid = function() {
         : 'tile tile-unvisited';
 
       if (newTile.row === startGoalRow && newTile.col === startTileCol) {
+        newTile.tileType = TILE_TYPE.start;
         newTile.isStart = true;
         this.startTileId = newTile.id;
       }
       if (newTile.row === startGoalRow && newTile.col === goalTileCol) {
+        newTile.tileType = TILE_TYPE.goal;
         newTile.isGoal = true;
         this.goalTileId = newTile.id;
       }
@@ -105,19 +108,12 @@ Grid.prototype.addEventListeners = function() {
         e.preventDefault();
 
         grid.mouseDown = true;
-        grid.tileClicked = (currTile.isStart)
-          ? TILE_TYPE.start
-          : (currTile.isGoal)
-          ? TILE_TYPE.goal
-          : (currTile.isWall)
-          ? TILE_TYPE.wall
-          : (currTile.isVisited)
-          ? TILE_TYPE.visited
-          : TILE_TYPE.unvisited;
+        grid.tileClickedType = currTile.tileType;
 
         if (!currTile.isStart && !currTile.isGoal) {
           grid.changeNormalTile(currTile);
         } else {
+          console.log('onMouseDown - changeSpecialTile()');
           this.changeSpecialTile(currTile);
         }
       };
@@ -126,9 +122,9 @@ Grid.prototype.addEventListeners = function() {
       currTileElement.onmouseup = (e) => {
         grid.mouseDown = false;
 
-        if (grid.tileClicked === TILE_TYPE.start) {
+        if (grid.tileClickedType === TILE_TYPE.start) {
           grid.startTileId = currTileId;
-        } else if (grid.tileClicked === TILE_TYPE.goal) {
+        } else if (grid.tileClickedType === TILE_TYPE.goal) {
           grid.goalTileId = currTileId;
         }
       };
@@ -137,12 +133,13 @@ Grid.prototype.addEventListeners = function() {
       currTileElement.onmouseenter = (e) => {
         if (grid.mouseDown && !currTile.isStart && !currTile.isGoal) {
           grid.changeNormalTile(currTile);
-        } else if (grid.mouseDown && (grid.tileClicked === TILE_TYPE.goal || grid.tileClicked === TILE_TYPE.start)) {
+        } else if (grid.mouseDown && (grid.tileClickedType === TILE_TYPE.goal || grid.tileClickedType === TILE_TYPE.start)) {
+          console.log('onMouseEnter - changeSpecialTile()');
           grid.changeSpecialTile(currTile);
 
-          if (grid.tileClicked === TILE_TYPE.start) {
+          if (grid.tileClickedType === TILE_TYPE.start) {
             grid.startTileId = currTileId;
-          } else if (grid.tileClicked === TILE_TYPE.goal) {
+          } else if (grid.tileClickedType === TILE_TYPE.goal) {
             grid.goalTileId = currTileId;
           }
         }
@@ -150,7 +147,10 @@ Grid.prototype.addEventListeners = function() {
 
       // onMouseLeave
       currTileElement.onmouseleave = (e) => {
-        //
+        if (grid.mouseDown && (grid.tileClickedType === TILE_TYPE.goal || grid.tileClickedType === TILE_TYPE.start)) {
+          console.log('onMouseLeave - changeSpecialTile()');
+          grid.changeSpecialTile(currTile);
+        }
       }
     }
   }
@@ -172,12 +172,14 @@ Grid.prototype.getTileFromId = function(id) {
 Grid.prototype.changeNormalTile = function(tile) {
   const tileElement = document.getElementById(tile.id);
 
-  if (this.tileClicked === TILE_TYPE.visited || this.tileClicked === TILE_TYPE.unvisited) {
-    // change all to normal
+  if (this.tileClickedType === TILE_TYPE.visited || this.tileClickedType === TILE_TYPE.unvisited) {
+    // clicked on normal - change all to normal
+    tile.tileType = TILE_TYPE.wall;
     tile.isWall = true;
     tileElement.className = 'tile tile-wall'
-  } else if (this.tileClicked === TILE_TYPE.wall) {
-    // change all to wall
+  } else if (this.tileClickedType === TILE_TYPE.wall) {
+    // clicked on wall - change all to wall
+    tile.tileType = TILE_TYPE.unvisited;
     tile.isWall = false;
     tileElement.className = 'tile tile-unvisited';
   }
@@ -188,17 +190,30 @@ Grid.prototype.changeSpecialTile = function(tile) {
   let previousTileElement;
 
   if (this.previousTileClicked) previousTileElement = document.getElementById(this.previousTileClicked.id);
+  console.log(previousTileElement);
 
-  if (!tile.isStart && !tile.isGoal) {
+  if (tile.tileType !== TILE_TYPE.start && tile.tileType !== TILE_TYPE.goal) {
+    console.log('1');
     if (this.previousTileClicked) {
-      // TODO: need to get previous tile status
-      this.previousTileClicked = this.previousTileClickedStatus === TILE_TYPE.unvisited
+      this.previousTileClicked.tileType = this.previousTileClickedType;
+      previousTileElement.className = `tile tile-${this.previousTileClickedType}`;
 
-      tileElement.className = (tile.isStart)
-        ? 'tile tile-start'
-        : 'tile tile-goal';
+      this.previousTileClicked = undefined;
 
+      this.previousTileClickedType = tile.tileType;
+      tileElement.className = `tile tile-${this.tileClickedType}`;
+      tile.tileType = this.tileClickedType;
     }
+  } else if (tile.tileType !== this.tileClickedType) {
+    console.log('2');
+    this.previousTileClicked.tileType = this.tileClickedType;
+    previousTileElement.className = `tile tile-${this.tileClickedType}`;
+  } else if (tile.tileType === this.tileClickedType) {
+    console.log('3');
+    // set previousTileClicked to current tile
+    this.previousTileClicked = tile;
+    tileElement.className = this.previousTileClickedType;
+    tile.tileType = this.previousTileClickedType;
   }
 };
 
